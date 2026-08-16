@@ -1,5 +1,7 @@
 # dsh-eyes
 
+> **本插件由 DeepSeek v4 Flash（`deepseek-v4-flash`）编写。**
+
 让 Agent 自己"看见"文字与图形的 DSH 插件，全程本地、不依赖视觉模型：
 
 - **`eyes_render`** — 在 Web GUI 对话流里渲染画布（文字、线条、矩形、圆形、椭圆），PNG 落盘到工作区 `renders/`（读完即焚），并**一式两份**另存永久副本到 `pics/`。
@@ -63,6 +65,8 @@ dsh plugin --profile web add link:<你的工作区>\dsh-eyes
 
 安装后校验 `%USERPROFILE%\.dsh\profiles\web\package.json`：dependencies 与 `dsh.profile.bundles` 都应包含 `dsh-eyes`。
 
+**可选**：`npm i mermaid@11` 仅在需要**全离线**渲染 Mermaid 图时安装；不装也能用——首次实际渲染时浏览器会**按需**从 CDN 加载（成功后缓存）。**安装/启动阶段不会盲目下载任何东西。**
+
 **必须重启 web 服务**（生产启动时插件列表与客户端 bundle 在启动时固化）：
 
 1. 在运行 `dsh web` 的窗口按 Ctrl+C（或结束监听 3080 端口的进程）。
@@ -75,7 +79,7 @@ dsh plugin --profile web add link:<你的工作区>\dsh-eyes
 
 参数：`width`/`height`（64–2048）、`background`（CSS 颜色）、`title`、`description`、`commands`（数组）、`mermaid`（字符串，可选）、`ocr`（布尔，渲染后顺带本地 OCR，默认 false）。
 
-**Mermaid 连线图**：传 `mermaid` 参数（Mermaid 源码字符串，如 `graph LR\n  A[start] --> B[process] --> C[end]`）即可让浏览器渲染出流程图/时序图等，**无需手工计算坐标**；`mermaid` 存在时优先于 `commands`。支持 flowchart / sequenceDiagram / classDiagram / stateDiagram 等 Mermaid 语法。渲染结果走同一套 PNG 存档（一式两份）+ 可选 OCR（可把节点文字读回给模型）。Mermaid 库优先加载本地副本（在插件目录 `npm i mermaid@11` 后全离线可用），否则回退 CDN（首次需浏览器联网）；加载或语法失败时工具返回明确错误。
+**Mermaid 连线图**：传 `mermaid` 参数（Mermaid 源码字符串，如 `graph LR\n  A[start] --> B[process] --> C[end]`）即可让浏览器渲染出流程图/时序图等，**无需手工计算坐标**；`mermaid` 存在时优先于 `commands`。支持 flowchart / sequenceDiagram / classDiagram / stateDiagram 等 Mermaid 语法。渲染结果走同一套 PNG 存档（一式两份）+ 可选 OCR（可把节点文字读回给模型）。**按需加载，不盲目下载**：只有实际传 `mermaid` 参数渲染时才加载 Mermaid 库，不渲染就不会下载任何 Mermaid 代码；且优先用本地副本（在插件目录 `npm i mermaid@11` 后全离线可用），缺失时才回退 CDN（首次需浏览器联网，成功后浏览器缓存）。加载或语法失败时工具返回明确错误。
 
 落盘 PNG 的像素尺寸与 `width`/`height` **完全一致**（不做设备像素比缩放），命令坐标与 PNG 像素一一对应——`eyes_analyze` 看到的网格坐标、`contentBox` 都与命令里的 x/y 直接可比。
 
@@ -120,7 +124,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 
 - **仅支持 Windows**：`eyes_ocr` 依赖 Windows 自带 OCR（`Windows.Media.Ocr` + PowerShell 5.1），其他平台无法读字；渲染/粘贴/像素分析不依赖 Windows，但插件整体按 Windows 平台维护。
 - **需要浏览器 GUI 打开**：`eyes_render` / `eyes_paste` 会等浏览器回传，15 秒超时；GUI 未开时返回明确错误。无服务端渲染兜底。
-- **Mermaid 依赖**：浏览器首次渲染 Mermaid 需加载库——优先取宿主 `/eyes/mermaid.min.js`（在插件目录 `npm i mermaid@11` 后提供，全离线），否则回退 jsDelivr CDN（需浏览器联网；成功加载后浏览器会缓存）。渲染与语法错误会作为工具报错返回。
+- **Mermaid 依赖（按需，不盲目下载）**：只有实际渲染 Mermaid 图时才按需加载——优先取宿主 `/eyes/mermaid.min.js`（在插件目录 `npm i mermaid@11` 后提供，全离线），否则回退 jsDelivr CDN（仅首次需浏览器联网，成功后浏览器缓存）。不渲染 mermaid 就完全不会下载。渲染与语法错误会作为工具报错返回。
 - **OCR 效果**：依赖 Windows 自带语言包（需已安装对应语言包，如 `zh-Hans-CN`）；`Windows.Media.Ocr` 对中英混排会在中文字符间插入空格，效果一般但可读；纯图形内容识别为空属正常。
 - **OCR 路径**：WinRT `StorageFile` 要求反斜杠路径，脚本已自动把 `/` 规范化为 `\`。
 - **`eyes_analyze` 仅支持 8-bit RGB/RGBA 非交错 PNG**（覆盖本插件的渲染输出与常见截图）；其他变体返回明确错误。
