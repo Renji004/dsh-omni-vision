@@ -9,11 +9,19 @@
 - **`eyes_ocr`** — 用 Windows 自带 OCR（`Windows.Media.Ocr`，完全离线）把 PNG 里的文字读回成文本。**这是 Agent "看见文字"的途径**：DeepSeek 是纯文本模型，但识别出的文本可以原样喂回给模型引用。
 - **`eyes_analyze`** — 把 PNG 解码成像素数据（N×N 颜色网格、主色占比、内容包围盒）。**这是 Agent "看见图形/颜色"的途径**：无需视觉模型，图形以结构化数据呈现。
 
-全程本地闭环：浏览器 canvas → 本机 HTTP → 本机磁盘 → Windows OCR / 像素分析。唯一出网环节是模型推理本身。
+全程本地闭环：浏览器 canvas → 本机 HTTP → 本机磁盘 → Windows OCR / 像素分析。**所有下载均按需、从不盲目下载**（详见"下载策略"）；出网环节仅限：模型推理本身，以及（可选）首次渲染 Mermaid 图且本地无副本时按需获取一次 Mermaid 库。
 
 ## 平台要求
 
 **仅支持 Windows。** `eyes_ocr` 通过 PowerShell 调用 Windows 自带 OCR 引擎（`Windows.Media.Ocr`，完全离线）；`eyes_render` / `eyes_paste` / `eyes_analyze` 本身不依赖 Windows 特性，但整个插件在非 Windows 上无法提供"读字"能力，按 Windows 平台维护。
+
+## 下载策略：全部按需，不盲目下载
+
+**安装与启动阶段零下载；所有获取均按需发生：**
+
+- **插件本体**：本地 `link:` / `file:` 安装，无任何下载。
+- **Mermaid 库**：唯一可能发生的运行时下载——仅在**首次实际渲染 Mermaid 图**且本地无副本时，浏览器按需从 CDN 获取一次（成功后缓存）；不渲染 Mermaid 就完全不会下载。
+- **其余全部本地**：渲染、OCR、像素分析、图片接收，均不产生任何网络下载。
 
 ## 工作原理
 
@@ -79,7 +87,7 @@ dsh plugin --profile web add link:<你的工作区>\dsh-eyes
 
 参数：`width`/`height`（64–2048）、`background`（CSS 颜色）、`title`、`description`、`commands`（数组）、`mermaid`（字符串，可选）、`ocr`（布尔，渲染后顺带本地 OCR，默认 false）。
 
-**Mermaid 连线图**：传 `mermaid` 参数（Mermaid 源码字符串，如 `graph LR\n  A[start] --> B[process] --> C[end]`）即可让浏览器渲染出流程图/时序图等，**无需手工计算坐标**；`mermaid` 存在时优先于 `commands`。支持 flowchart / sequenceDiagram / classDiagram / stateDiagram 等 Mermaid 语法。渲染结果走同一套 PNG 存档（一式两份）+ 可选 OCR（可把节点文字读回给模型）。**按需加载，不盲目下载**：只有实际传 `mermaid` 参数渲染时才加载 Mermaid 库，不渲染就不会下载任何 Mermaid 代码；且优先用本地副本（在插件目录 `npm i mermaid@11` 后全离线可用），缺失时才回退 CDN（首次需浏览器联网，成功后浏览器缓存）。加载或语法失败时工具返回明确错误。
+**Mermaid 连线图**：传 `mermaid` 参数（Mermaid 源码字符串，如 `graph LR\n  A[start] --> B[process] --> C[end]`）即可让浏览器渲染出流程图/时序图等，**无需手工计算坐标**；`mermaid` 存在时优先于 `commands`。支持 flowchart / sequenceDiagram / classDiagram / stateDiagram 等 Mermaid 语法。渲染结果走同一套 PNG 存档（一式两份）+ 可选 OCR（可把节点文字读回给模型）。**按需加载**（本插件所有下载均按需，见"下载策略"）：只有实际传 `mermaid` 参数渲染时才加载，优先用本地副本（在插件目录 `npm i mermaid@11` 后全离线可用），缺失时才回退 CDN（首次需浏览器联网，成功后浏览器缓存）。加载或语法失败时工具返回明确错误。
 
 落盘 PNG 的像素尺寸与 `width`/`height` **完全一致**（不做设备像素比缩放），命令坐标与 PNG 像素一一对应——`eyes_analyze` 看到的网格坐标、`contentBox` 都与命令里的 x/y 直接可比。
 
@@ -124,7 +132,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 
 - **仅支持 Windows**：`eyes_ocr` 依赖 Windows 自带 OCR（`Windows.Media.Ocr` + PowerShell 5.1），其他平台无法读字；渲染/粘贴/像素分析不依赖 Windows，但插件整体按 Windows 平台维护。
 - **需要浏览器 GUI 打开**：`eyes_render` / `eyes_paste` 会等浏览器回传，15 秒超时；GUI 未开时返回明确错误。无服务端渲染兜底。
-- **Mermaid 依赖（按需，不盲目下载）**：只有实际渲染 Mermaid 图时才按需加载——优先取宿主 `/eyes/mermaid.min.js`（在插件目录 `npm i mermaid@11` 后提供，全离线），否则回退 jsDelivr CDN（仅首次需浏览器联网，成功后浏览器缓存）。不渲染 mermaid 就完全不会下载。渲染与语法错误会作为工具报错返回。
+- **Mermaid 依赖（按需）**：本插件所有下载均按需（见"下载策略"）——Mermaid 仅在实际渲染时才加载，优先取宿主 `/eyes/mermaid.min.js`（在插件目录 `npm i mermaid@11` 后提供，全离线），否则回退 jsDelivr CDN（仅首次需浏览器联网，成功后浏览器缓存）；不渲染就完全不会下载。渲染与语法错误会作为工具报错返回。
 - **OCR 效果**：依赖 Windows 自带语言包（需已安装对应语言包，如 `zh-Hans-CN`）；`Windows.Media.Ocr` 对中英混排会在中文字符间插入空格，效果一般但可读；纯图形内容识别为空属正常。
 - **OCR 路径**：WinRT `StorageFile` 要求反斜杠路径，脚本已自动把 `/` 规范化为 `\`。
 - **`eyes_analyze` 仅支持 8-bit RGB/RGBA 非交错 PNG**（覆盖本插件的渲染输出与常见截图）；其他变体返回明确错误。
