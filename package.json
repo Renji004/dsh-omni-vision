@@ -1,6 +1,6 @@
 {
   "name": "dsh-eyes",
-  "description": "A canvas the agent draws on and then sees: eyes_render draws text/shapes in the Web GUI, stores the PNG locally, and hands the result back to the model.",
+  "description": "A canvas the agent draws on and then sees: eyes_render draws text/shapes in the Web GUI, stores the PNG locally, and hands the result back to the model. Windows-only: eyes_ocr reads text via the built-in Windows OCR engine (Windows.Media.Ocr).",
   "version": "0.1.0",
   "type": "module",
   "main": "./lib/index.js",

@@ -9,6 +9,10 @@
 
 全程本地闭环：浏览器 canvas → 本机 HTTP → 本机磁盘 → Windows OCR / 像素分析。唯一出网环节是模型推理本身。
 
+## 平台要求
+
+**仅支持 Windows。** `eyes_ocr` 通过 PowerShell 调用 Windows 自带 OCR 引擎（`Windows.Media.Ocr`，完全离线）；`eyes_render` / `eyes_paste` / `eyes_analyze` 本身不依赖 Windows 特性，但整个插件在非 Windows 上无法提供"读字"能力，按 Windows 平台维护。
+
 ## 工作原理
 
 ```
@@ -114,6 +118,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 
 ## 限制
 
+- **仅支持 Windows**：`eyes_ocr` 依赖 Windows 自带 OCR（`Windows.Media.Ocr` + PowerShell 5.1），其他平台无法读字；渲染/粘贴/像素分析不依赖 Windows，但插件整体按 Windows 平台维护。
 - **需要浏览器 GUI 打开**：`eyes_render` / `eyes_paste` 会等浏览器回传，15 秒超时；GUI 未开时返回明确错误。无服务端渲染兜底。
 - **Mermaid 依赖**：浏览器首次渲染 Mermaid 需加载库——优先取宿主 `/eyes/mermaid.min.js`（在插件目录 `npm i mermaid@11` 后提供，全离线），否则回退 jsDelivr CDN（需浏览器联网；成功加载后浏览器会缓存）。渲染与语法错误会作为工具报错返回。
 - **OCR 效果**：依赖 Windows 自带语言包（需已安装对应语言包，如 `zh-Hans-CN`）；`Windows.Media.Ocr` 对中英混排会在中文字符间插入空格，效果一般但可读；纯图形内容识别为空属正常。
