@@ -1,0 +1,30 @@
+{
+  "name": "dsh-eyes",
+  "description": "A canvas the agent draws on and then sees: eyes_render draws text/shapes in the Web GUI, stores the PNG locally, and hands the result back to the model.",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./lib/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "mermaid": "^11.16.1"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  }
+}
