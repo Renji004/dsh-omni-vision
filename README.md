@@ -5,7 +5,7 @@
 让 Agent 自己"看见"文字与图形的 DSH 插件，全程本地、不依赖视觉模型：
 
 - **`eyes_render`** — 在 Web GUI 对话流里渲染画布（文字、线条、矩形、圆形、椭圆），PNG 落盘到工作区 `renders/`（读完即焚），并**一式两份**另存永久副本到 `pics/`。
-- **`eyes_paste`** — 让用户把剪贴板图片（截图/照片）直接 Ctrl+V 粘贴或拖进页面：浏览器捕获图片、归一化为 PNG 存到工作区，供本地 OCR/像素分析读取。同样一式两份（`renders/` 读完即焚 + `pics/` 永久保留）。**全本地读图路径**（不限流、离线），独立于 DSH 原生发图链路（DSH 输入框本身支持图片粘贴/拖放，但发图需要选择支持图片的模型，见"限制"）。
+- **`eyes_paste`** — 让用户把剪贴板图片（截图/照片）直接 Ctrl+V 粘贴或拖进页面：浏览器捕获图片、归一化为 PNG 存到工作区，供本地 OCR/像素分析读取。只写 `renders/`（读完即焚，**不留** `pics/` 永久副本）。**全本地读图路径**（不限流、离线），独立于 DSH 原生发图链路（DSH 输入框本身支持图片粘贴/拖放，但发图需要选择支持图片的模型，见"限制"）。
 - **`eyes_ocr`** — 用 Windows 自带 OCR（`Windows.Media.Ocr`，完全离线）把 PNG 里的文字读回成文本。**这是 Agent "看见文字"的途径**：DeepSeek 是纯文本模型，但识别出的文本可以原样喂回给模型引用。
 - **`eyes_analyze`** — 把 PNG 解码成像素数据（N×N 颜色网格、主色占比、内容包围盒）。**这是 Agent "看见图形/颜色"的途径**：无需视觉模型，图形以结构化数据呈现。
 
@@ -51,8 +51,7 @@
   │                      ▼
   │          POST /eyes/paste（同源校验，按 callId 匹配）
   │                      ▼
-  │          写 <workspace>/renders/paste-<callId>.png（读完即焚）
-  │                    + 永久副本 <workspace>/pics/paste-<callId>.png → 返回路径
+  │          写 <workspace>/renders/paste-<callId>.png（读完即焚，无永久副本）
   └────────── 之后 eyes_ocr / eyes_analyze 读取
 ```
 
@@ -61,7 +60,7 @@
 - **本地感知（图形）**：`eyes_analyze` 自带纯 Node PNG 解码器（zlib + 反滤波，支持 8-bit RGB/RGBA 非交错 PNG），输出网格平均色、主色直方图、内容包围盒。
 - **渲染匹配**：客户端把工具调用的 `callId` 随 PNG 一起 POST 回来，服务端按 `exec.callId` 匹配待渲染条目，天然支持并行调用与多标签页（先到先得，其余 404 被客户端静默忽略）。
 - **重放**：刷新页面后，历史会话里的卡片从工具参数（`block.call.argsRaw`）重放绘制，不再上传。
-- **读完即焚 + 一式两份**：插件每次产出（render/paste）都写两份——`renders/` 下的临时副本在 `eyes_ocr` / `eyes_analyze` 读取成功后自动删除（返回结果带 `fileDeleted` 标记，`renders/` 不会越积越多）；`pics/` 下的永久副本（返回结果带 `keptPath`）**不会被删除**，用户随时可以打开查看。用户放在其他目录的图片（截图、照片等）**绝不会**被删除。
+- **读完即焚 + 一式两份**：`eyes_render` 每次产出都写两份——`renders/` 下的临时副本在 `eyes_ocr` / `eyes_analyze` 读取成功后自动删除（返回结果带 `fileDeleted` 标记，`renders/` 不会越积越多）；`pics/` 下的永久副本（返回结果带 `keptPath`）**不会被删除**，用户随时可以打开查看。`eyes_paste` 只写 `renders/`（读完即焚），**不保留** `pics/` 永久副本。用户放在其他目录的图片（截图、照片等）**绝不会**被删除。
 
 ## 安装
 
@@ -114,7 +113,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 
 ### eyes_paste —— 收图
 
-参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户复制一张图片按 Ctrl+V，浏览器捕获并保存为 `<workspace>/renders/paste-<callId>.png`（读完即焚），永久副本在 `<workspace>/pics/paste-<callId>.png`（`keptPath`）。返回 `path`、`width`、`height`、`bytes`、`keptPath`。
+参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户复制一张图片按 Ctrl+V，浏览器捕获并保存为 `<workspace>/renders/paste-<callId>.png`（读完即焚，**无** `pics/` 永久副本）。返回 `path`、`width`、`height`、`bytes`、`fileSaved`、`fileError`。
 
 ### 示例
 
