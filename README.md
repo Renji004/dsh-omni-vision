@@ -1,6 +1,6 @@
 # dsh-omni-vision
 
-> **本插件由 DeepSeek v4 Flash（`deepseek-v4-flash`）编写。**
+> **本插件全由 DeepSeek v4 Flash（`deepseek-v4-flash`）编写。**
 
 让 Agent 自己"看见"文字与图形的 DSH 插件，全程本地、不依赖视觉模型：
 
@@ -113,7 +113,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 
 ### eyes_paste —— 收图
 
-参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户复制一张图片按 Ctrl+V，浏览器捕获并保存为 `<workspace>/renders/paste-<callId>.png`（读完即焚，**无** `pics/` 永久副本）。返回 `path`、`width`、`height`、`bytes`、`fileSaved`、`fileError`。
+参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户选择一张图片拖到浏览器界面（或将图片副本添加到renders文件夹并告诉所用AI），浏览器捕获并保存为 `<workspace>/renders/paste-<callId>.png`（读完即焚，**无** `pics/` 永久副本）。返回 `path`、`width`、`height`、`bytes`、`fileSaved`、`fileError`。
 
 ### 示例
 
