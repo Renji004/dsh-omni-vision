@@ -130,7 +130,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 ## 限制
 
 - **仅支持 Windows**：`eyes_ocr` 依赖 Windows 自带 OCR（`Windows.Media.Ocr` + PowerShell 5.1），其他平台无法读字；渲染/粘贴/像素分析不依赖 Windows，但插件整体按 Windows 平台维护。
-- **需要浏览器 GUI 打开**：`eyes_render` / `eyes_paste` 会等浏览器回传，15 秒超时；GUI 未开时返回明确错误。无服务端渲染兜底。
+- **需要浏览器 GUI 打开**：`eyes_render` / `eyes_paste` 会等浏览器回传——普通渲染 15 秒、Mermaid 首次加载放宽到 45 秒、`eyes_paste` 等人粘贴放宽到 60 秒；GUI 未开时返回明确错误。无服务端渲染兜底。
 - **Mermaid 依赖（按需）**：本插件所有下载均按需（见"下载策略"）——Mermaid 仅在实际渲染时才加载，优先取宿主 `/eyes/mermaid.min.js`（在插件目录 `npm i mermaid@11` 后提供，全离线），否则回退 jsDelivr CDN（仅首次需浏览器联网，成功后浏览器缓存）；不渲染就完全不会下载。渲染与语法错误会作为工具报错返回。
 - **OCR 效果**：依赖 Windows 自带语言包（需已安装对应语言包，如 `zh-Hans-CN`）；`Windows.Media.Ocr` 对中英混排会在中文字符间插入空格，效果一般但可读；纯图形内容识别为空属正常。
 - **OCR 路径**：WinRT `StorageFile` 要求反斜杠路径，脚本已自动把 `/` 规范化为 `\`。
