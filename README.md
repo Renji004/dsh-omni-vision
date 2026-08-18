@@ -113,7 +113,7 @@ PNG **一式两份**：`renders/eyes-<callId>.png`（`ocr:true` 且读回成功�
 
 ### eyes_paste —— 收图
 
-参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户选择一张图片拖到浏览器界面（或将图片副本添加到renders文件夹并告诉所用AI），浏览器捕获并保存为 `<workspace>/renders/paste-<callId>.png`（读完即焚，**无** `pics/` 永久副本）。返回 `path`、`width`、`height`、`bytes`、`fileSaved`、`fileError`。
+参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户选择一张图片拖到浏览器界面（批量读取时，可把多张图片副本直接放入 renders/ 文件夹并告诉所用AI），浏览器捕获并保存为 `<workspace>/renders/paste-<callId>.png`（读完即焚，**无** `pics/` 永久副本读完即焚；未读取的文件会留在 renders/ 中，可手动清理）。返回 `path`、`width`、`height`、`bytes`、`fileSaved`、`fileError`。
 
 ### 示例
 
