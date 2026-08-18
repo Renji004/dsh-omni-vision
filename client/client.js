@@ -1,5 +1,5 @@
 /**
- * dsh-eyes client half — hand-written module-loader factory bundle (no build
+ * dsh-omni-vision client half — hand-written module-loader factory bundle (no build
  * step). The loader table provides `react`; everything else is plain DOM.
  *
  * Registers a keyed `tool.call.toolview` entry for `eyes_render`: renders the
@@ -9,7 +9,7 @@
  * resolve. Settled blocks (history replay) redraw without uploading.
  */
 window.__ModuleLoader__.load({
-	id: "dsh-eyes",
+	id: "dsh-omni-vision",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;
@@ -17,10 +17,10 @@ window.__ModuleLoader__.load({
 		const React = require("react");
 
 		// ---- styles (injected once at materialization, like the built bundles) ----
-		const CSS_TAG = "dsh-eyes/card.css";
+		const CSS_TAG = "dsh-omni-vision/card.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(CSS_TAG) + "]") === null) {
 			const tag = document.createElement("style");
-			tag.dataset.plugin = "dsh-eyes";
+			tag.dataset.plugin = "dsh-omni-vision";
 			tag.dataset.pluginCss = CSS_TAG;
 			tag.textContent = [
 				".dshEyes_card{flex-direction:column;gap:8px;display:flex;min-width:0}",
@@ -292,7 +292,7 @@ window.__ModuleLoader__.load({
 						reject(new Error("mermaid loaded but not available"));
 					}
 				};
-				const local = document.getElementById("dsh-eyes-mermaid");
+				const local = document.getElementById("dsh-omni-vision-mermaid");
 				if (local !== null) {
 					// already loading; wait for its load event to have run
 					if (window.mermaid) ready();
@@ -300,13 +300,13 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				const s = document.createElement("script");
-				s.id = "dsh-eyes-mermaid";
+				s.id = "dsh-omni-vision-mermaid";
 				s.src = "/eyes/mermaid.min.js"; // served by the host when a local copy is installed
 				s.onload = ready;
 				s.onerror = () => {
 					// local copy absent: fall back to CDN (needs browser network)
 					const s2 = document.createElement("script");
-					s2.id = "dsh-eyes-mermaid-cdn";
+					s2.id = "dsh-omni-vision-mermaid-cdn";
 					s2.src = MERMAID_CDN;
 					s2.onload = ready;
 					s2.onerror = () => reject(new Error("failed to load mermaid (no network?)"));
@@ -660,7 +660,7 @@ window.__ModuleLoader__.load({
 			}, PasteCard));
 		}
 
-		exports.name = "dsh-eyes";
+		exports.name = "dsh-omni-vision";
 		exports.inject = ["slots"];
 		exports.apply = apply;
 		return module.exports;

@@ -1,4 +1,4 @@
-# dsh-eyes
+# dsh-omni-vision
 
 > **本插件由 DeepSeek v4 Flash（`deepseek-v4-flash`）编写。**
 
@@ -66,11 +66,11 @@
 
 ```powershell
 cd <你的工作区>
-dsh plugin --profile web add link:<你的工作区>\dsh-eyes
-# 若链接失败：dsh plugin --profile web add file:<你的工作区>\dsh-eyes
+dsh plugin --profile web add link:<你的工作区>\dsh-omni-vision
+# 若链接失败：dsh plugin --profile web add file:<你的工作区>\dsh-omni-vision
 ```
 
-安装后校验 `%USERPROFILE%\.dsh\profiles\web\package.json`：dependencies 与 `dsh.profile.bundles` 都应包含 `dsh-eyes`。
+安装后校验 `%USERPROFILE%\.dsh\profiles\web\package.json`：dependencies 与 `dsh.profile.bundles` 都应包含 `dsh-omni-vision`。
 
 **可选**：`npm i mermaid@11` 仅在需要**全离线**渲染 Mermaid 图时安装；不装也能用——首次实际渲染时浏览器会**按需**从 CDN 加载（成功后缓存）。**安装/启动阶段不会盲目下载任何东西。**
 

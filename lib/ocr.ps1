@@ -1,4 +1,4 @@
-# dsh-eyes: local OCR via Windows.Media.Ocr (WinRT, PowerShell 5.1)
+# dsh-omni-vision: local OCR via Windows.Media.Ocr (WinRT, PowerShell 5.1)
 # Usage:
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File ocr.ps1 -Path <png>
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File ocr.ps1 -ListEngines
