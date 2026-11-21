@@ -599,44 +599,63 @@ return (${expr});`);
 
 			if (cmd.labels === false) return;
 			const size = Math.max(7, numOr(cmd.size, 12));
+			const pad = Math.max(5, Math.round(size * 0.55));
 			c.font = `${size}px ${strOr(cmd.font, "ui-sans-serif, system-ui, sans-serif")}`;
 			c.fillStyle = axisColor;
-			c.textBaseline = "alphabetic";
-			// x labels: just under the axis, or along the bottom edge without one.
-			const axisY = xAxis ? v.sy(0) : null;
-			let labelY = axisY === null ? v.y + v.h - 4 : axisY + size + 4;
-			if (axisY !== null && labelY > v.y + v.h - 2) labelY = axisY - 5;
+			c.textBaseline = "middle";
+
+			// Tick labels live OUTSIDE the data box, in the margin, like a normal
+			// chart: the plot area is for data, the scale belongs to the frame.
+			// Inside placement is only the fallback when the canvas edge is near.
+			const ticksX = [];
 			for (let i = Math.ceil(v.x0 / stepX - 1e-9); i * stepX <= v.x1 + 1e-9; i++) {
 				const val = i * stepX;
 				const px = v.sx(val);
 				if (px < v.x - 1 || px > v.x + v.w + 1) continue;
-				const text = formatTick(val, stepX);
-				// Keep the first/last label inside the box instead of dropping it.
-				const half = text.length * size * 0.31;
-				let tx = px;
+				ticksX.push({ px, text: formatTick(val, stepX) });
+			}
+			const ticksY = [];
+			for (let j = Math.ceil(v.y0 / stepY - 1e-9); j * stepY <= v.y1 + 1e-9; j++) {
+				const val = j * stepY;
+				// The origin is labelled once, by the x axis, so no doubled "0".
+				if (yAxis && Math.abs(val) < stepY * 1e-6) continue;
+				ticksY.push({ py: v.sy(val), text: formatTick(val, stepY) });
+			}
+			const canvasW = c.canvas ? c.canvas.width / d : v.x + v.w + 400;
+			const canvasH = c.canvas ? c.canvas.height / d : v.y + v.h + 400;
+			const widestY = ticksY.reduce((m, t) => Math.max(m, t.text.length * size * 0.62), 0);
+			// A zero line strictly INSIDE the plot keeps its labels beside it; a
+			// zero that is just the left/bottom edge is a normal axis and gets
+			// its labels in the margin. (x0: 0 must not mean "labels inside".)
+			const yAxisInside = v.x0 < -1e-9 && v.x1 > 1e-9;
+			const xAxisInside = v.y0 < -1e-9 && v.y1 > 1e-9;
+			const yOutside = !yAxisInside && v.x - pad - widestY >= 0;
+			const xOutside = !xAxisInside && canvasH - (v.y + v.h) >= size + pad + 2;
+
+			let labelY;
+			if (xAxisInside) labelY = v.sy(0) + pad + size * 0.5;
+			else if (xOutside) labelY = v.y + v.h + pad + size * 0.5;
+			else labelY = v.y + v.h - pad - size * 0.5;
+			for (const t of ticksX) {
+				const half = t.text.length * size * 0.31;
+				let tx = t.px;
 				let align = "center";
-				if (tx - half < v.x + 2) {
-					tx = v.x + 2;
+				if (tx - half < 2) {
+					tx = 2;
 					align = "left";
-				} else if (tx + half > v.x + v.w - 2) {
-					tx = v.x + v.w - 2;
+				} else if (tx + half > canvasW - 2) {
+					tx = canvasW - 2;
 					align = "right";
 				}
 				c.textAlign = align;
-				c.fillText(text, tx, labelY);
+				c.fillText(t.text, tx, labelY);
 			}
-			// y labels: right of the axis (or inside the left edge); the origin is
-			// labelled once, by the x axis, so there is no doubled "0".
-			const axisX = yAxis ? v.sx(0) : null;
-			for (let j = Math.ceil(v.y0 / stepY - 1e-9); j * stepY <= v.y1 + 1e-9; j++) {
-				const val = j * stepY;
-				if (xAxis && Math.abs(val) < stepY * 1e-6) continue;
-				const py = Math.max(v.y + size * 0.8, Math.min(v.y + v.h - 2, v.sy(val)));
-				const text = formatTick(val, stepY);
-				const left = axisX !== null ? axisX + 6 : v.x + 4;
-				const wide = left + text.length * size * 0.62 > v.x + v.w - 4;
-				c.textAlign = wide && axisX !== null ? "right" : "left";
-				c.fillText(text, wide && axisX !== null ? axisX - 6 : left, py + size * 0.35);
+			c.textAlign = yAxisInside || !yOutside ? "left" : "right";
+			const labelX = yAxisInside ? v.sx(0) + pad : yOutside ? v.x - pad : v.x + 4;
+			for (const t of ticksY) {
+				// Clamp so the top/bottom tick is nudged inside, never dropped.
+				const py = Math.max(v.y + size * 0.5, Math.min(v.y + v.h - size * 0.5, t.py));
+				c.fillText(t.text, labelX, py);
 			}
 		}
 
