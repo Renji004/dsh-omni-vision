@@ -576,13 +576,15 @@ return (${expr});`);
 			}
 			const arrow = cmd.arrows !== false && v.w >= 28 && v.h >= 28;
 			c.fillStyle = axisColor;
+			// The head sits ON the axis end: the tip is exactly where the line
+			// stops, so no stub pokes out past the arrow.
 			if (arrow && xAxis) {
 				const py = v.sy(0);
 				const ex = v.x + v.w;
 				c.beginPath();
-				c.moveTo(ex - 2, py);
-				c.lineTo(ex - 10, py - 4);
-				c.lineTo(ex - 10, py + 4);
+				c.moveTo(ex, py);
+				c.lineTo(ex - 9, py - 4.5);
+				c.lineTo(ex - 9, py + 4.5);
 				c.closePath();
 				c.fill();
 			}
@@ -590,9 +592,9 @@ return (${expr});`);
 				const px = v.sx(0);
 				const ey = v.y;
 				c.beginPath();
-				c.moveTo(px, ey + 2);
-				c.lineTo(px - 4, ey + 10);
-				c.lineTo(px + 4, ey + 10);
+				c.moveTo(px, ey);
+				c.lineTo(px - 4.5, ey + 9);
+				c.lineTo(px + 4.5, ey + 9);
 				c.closePath();
 				c.fill();
 			}
