@@ -490,10 +490,22 @@ return (${expr});`);
 		/** 1-2-5 tick step: the "human" number closest to range/target. */
 		function niceStep(range, target) {
 			if (!(range > 0) || !(target > 0)) return 1;
+			// Pick the 1-2-5-10 candidate whose tick COUNT sits closest to the
+			// target (log distance). Rounding raw up instead over-shoots badly for
+			// ranges like 12 with target 5 (5 -> only 3 ticks instead of 6).
 			const raw = range / target;
 			const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-			const n = raw / mag;
-			return mag * (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10);
+			let best = 1;
+			let bestErr = Infinity;
+			for (const m of [1, 2, 5, 10]) {
+				const count = range / (mag * m);
+				const err = Math.abs(Math.log(count / target));
+				if (err < bestErr - 1e-12) {
+					bestErr = err;
+					best = m;
+				}
+			}
+			return mag * best;
 		}
 
 		/** Tick label text; trims float noise and uses exponent notation at the extremes. */
@@ -594,11 +606,24 @@ return (${expr});`);
 			const axisY = xAxis ? v.sy(0) : null;
 			let labelY = axisY === null ? v.y + v.h - 4 : axisY + size + 4;
 			if (axisY !== null && labelY > v.y + v.h - 2) labelY = axisY - 5;
-			c.textAlign = "center";
 			for (let i = Math.ceil(v.x0 / stepX - 1e-9); i * stepX <= v.x1 + 1e-9; i++) {
-				const px = v.sx(i * stepX);
-				if (px < v.x + 8 || px > v.x + v.w - 8) continue;
-				c.fillText(formatTick(i * stepX, stepX), px, labelY);
+				const val = i * stepX;
+				const px = v.sx(val);
+				if (px < v.x - 1 || px > v.x + v.w + 1) continue;
+				const text = formatTick(val, stepX);
+				// Keep the first/last label inside the box instead of dropping it.
+				const half = text.length * size * 0.31;
+				let tx = px;
+				let align = "center";
+				if (tx - half < v.x + 2) {
+					tx = v.x + 2;
+					align = "left";
+				} else if (tx + half > v.x + v.w - 2) {
+					tx = v.x + v.w - 2;
+					align = "right";
+				}
+				c.textAlign = align;
+				c.fillText(text, tx, labelY);
 			}
 			// y labels: right of the axis (or inside the left edge); the origin is
 			// labelled once, by the x axis, so there is no doubled "0".
@@ -606,8 +631,7 @@ return (${expr});`);
 			for (let j = Math.ceil(v.y0 / stepY - 1e-9); j * stepY <= v.y1 + 1e-9; j++) {
 				const val = j * stepY;
 				if (xAxis && Math.abs(val) < stepY * 1e-6) continue;
-				const py = v.sy(val);
-				if (py < v.y + 12 || py > v.y + v.h - 3) continue;
+				const py = Math.max(v.y + size * 0.8, Math.min(v.y + v.h - 2, v.sy(val)));
 				const text = formatTick(val, stepY);
 				const left = axisX !== null ? axisX + 6 : v.x + 4;
 				const wide = left + text.length * size * 0.62 > v.x + v.w - 4;
