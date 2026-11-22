@@ -9,11 +9,10 @@
 | 方向 | 工具 | 现在的定位 |
 |---|---|---|
 | **进来** | `eyes_grab` | 截取窗口/屏幕/区域，直接交给模型看——"你看看"不用再手动截图 |
-| **进来** | `eyes_paste` | 用户拖图/粘贴，PNG 落到工作区磁盘（需要文件本身时用） |
+| **进来** | `eyes_paste` | 用户拖图/粘贴，PNG 只经过系统临时目录（需要文件本身时用） |
 | **出去** | `eyes_render` | 在 GUI 里画图（含 Mermaid），并回传给模型——**画完自己看得见**，能自查 |
 | **读字** | `eyes_ocr` | 本地离线 OCR：只想要文字去引用/检索时，比看图便宜 |
 | **兜底** | `eyes_analyze` | 像素网格/主色/包围盒：没有视觉路由，或确实需要像素数值时 |
-| **兜底** | `eyes_lmstudio` | 本机 LM Studio 的视觉模型，全程不出机器 |
 
 全程本地闭环：浏览器 canvas → 本机 HTTP → 本机磁盘 → Windows OCR / 像素分析 / 系统截屏。**所有下载均按需、不盲目下载**（详见"下载策略"）；出网环节仅限：模型推理本身，以及（可选）首次渲染 Mermaid 图且本地无副本时按需获取一次 Mermaid 库。
 
@@ -42,8 +41,7 @@
   │                      ▼
   │          POST /eyes/render（同源校验，按 callId 匹配）
   │                      ▼
-  │          写 <workspace>/renders/eyes-<callId>.png（读完即焚）
-  │        + 永久副本 <workspace>/pics/eyes-<callId>.png
+  │          写 <workspace>/pics/eyes-<callId>.png（唯一留档）
   │        + attachments.saveImage（内容寻址存储）
   │                      ▼
   └──────── 工具结果 = 文本信封 + （模型支持图片时）image 图片块 ──▶ 模型看见自己画的图
@@ -51,21 +49,21 @@
 模型 ──eyes_grab──▶ grab.ps1（PowerShell + System.Drawing，DPI 感知）
   │                      │ scope=window（默认，前台窗口或按标题匹配）/ screen / region / list
   │                      ▼
-  │          临时 PNG 只做中转（renders/grab-<callId>.png）
+  │          临时 PNG 只做中转（%TEMP%\dsh-omni-vision\grab-<callId>.png）
   │                      │ 读入内存 → saveImage → 立刻删掉临时文件
   └──────── 结果：尺寸/窗口标题/包围盒 + image 图片块 ──▶ 模型当场看见屏幕，磁盘上不留痕
 
 用户图片进来：也可以直接用输入框发图（客户端原生支持）；eyes_paste 留作显式粘贴卡片
   │                      │ 浏览器捕获 → canvas → PNG base64
   │                      ▼
-  │          POST /eyes/paste → 临时 PNG（renders/paste-<callId>.png）
+  │          POST /eyes/paste → 临时 PNG（%TEMP%\dsh-omni-vision\paste-<callId>.png）
   └────────── 附加到结果后立即删除；纯文本路由下保留给 eyes_ocr / eyes_analyze
 ```
 
-- **图片能力探测 + 降级**：执行时探测当前模型路由是否声明 `image` 输入（`llm.resolveModelInfo().inputModalities`）。支持 → 结果带 `{type:'image', attachment}` 图片块；不支持 → 只返回文本信封，会话绝不报错。支持图片时**截图/粘贴不落盘**（临时 PNG 读完即删）；纯文本路由下截屏会保留 PNG，供 `eyes_ocr` 兜底。
+- **图片能力探测 + 降级**：执行时探测当前模型路由是否声明 `image` 输入（`llm.resolveModelInfo().inputModalities`）。支持 → 结果带 `{type:'image', attachment}` 图片块；不支持 → 只返回文本信封，会话绝不报错。支持图片时**截图/粘贴用完即删**；纯文本路由下临时 PNG 留在系统临时目录，供 `eyes_ocr` 兜底。
 - **渲染匹配**：客户端把工具调用的 `callId` 随 PNG 一起 POST 回来，服务端按 `exec.callId` 匹配待渲染条目，天然支持并行调用与多标签页（先到先得，其余 404 被客户端静默忽略）。
 - **重放**：刷新页面后，历史会话里的卡片从工具参数（`block.call.argsRaw`）重放绘制，不再上传。
-- **只有画出来的图才留档**：`eyes_render` 写两份——`renders/` 下的临时副本（OCR 自检后删，结果带 `fileDeleted`）+ `pics/` 下的永久副本（结果带 `keptPath`）**不会被删除**。`eyes_grab` / `eyes_paste` 的临时 PNG 在图片附加成功后立刻删除，默认不留任何文件；`eyes_grab` 传 `keep:true` 才额外留一份 `pics/`。用户放在其他目录的图片**绝不会**被删除。
+- **工作区里只留该留的**：`eyes_render` 只写 `pics/` 一份永久副本（结果带 `keptPath`），不再往工作区写"临时/读完即焚"的副本。`eyes_grab` / `eyes_paste` 的临时 PNG 放在系统临时目录（`%TEMP%\dsh-omni-vision\`），图片附加成功后立刻删除；`eyes_grab` 传 `keep:true` 才额外留一份 `pics/`。用户放在其他目录的图片**绝不会**被删除。
 
 ## 安装
 
@@ -154,7 +152,7 @@ DPI 缩放（125%/150%）已处理：先 `SetProcessDPIAware` 再取窗口矩形
 
 ### eyes_ocr —— 读文字
 
-参数：`path`（PNG 绝对路径）。返回 `ok`、`text`（全文）、`lines`（逐行）、`language`，以及 `fileDeleted`（`renders/` 下的源文件读取后自动删除）。
+参数：`path`（PNG 绝对路径）。返回 `ok`、`text`（全文）、`lines`（逐行）、`language`，以及 `fileDeleted`（插件自己放在系统临时目录里的源文件，读完即删；其他位置的图不动）。
 
 ### eyes_analyze —— 看像素
 
@@ -162,11 +160,7 @@ DPI 缩放（125%/150%）已处理：先 `SetProcessDPIAware` 再取窗口矩形
 
 ### eyes_paste —— 收图
 
-参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户复制一张图片按 Ctrl+V 或直接拖入，浏览器捕获并转成 PNG。模型支持图片时直接附加到结果并删除临时文件；纯文本路由下保留 `<workspace>/renders/paste-<callId>.png` 供 `eyes_ocr` / `eyes_analyze` 读。注意：DSH 输入框现在本身就能收图，日常直接把图发给对话即可，这个工具只在需要显式提示用户贴图时才有优势。
-
-### eyes_lmstudio —— 本机视觉模型
-
-参数：`prompt`、`path`（可选 PNG）、`model`、`baseUrl`、`maxTokens`、`temperature`、`timeoutMs`。默认 `http://127.0.0.1:1234`、模型 `minicpm-v-4.6-thinking`。需要先开 LM Studio 的服务端，否则连接失败。
+参数：`hint`（可选，显示在粘贴卡片上的说明）。调用后 GUI 出现粘贴卡片，用户复制一张图片按 Ctrl+V 或直接拖入，浏览器捕获并转成 PNG。模型支持图片时直接附加到结果并删除临时文件；纯文本路由下临时文件留在 `%TEMP%\dsh-omni-vision\paste-<callId>.png` 供 `eyes_ocr` / `eyes_analyze` 读。注意：DSH 输入框现在本身就能收图，日常直接把图发给对话即可，这个工具只在需要显式提示用户贴图时才有优势。
 
 ### 示例
 
@@ -178,7 +172,7 @@ DPI 缩放（125%/150%）已处理：先 `SetProcessDPIAware` 再取窗口矩形
 
 > 用 eyes_render 画一张 900x500 的 Mermaid 流程图：`graph TD\n  A[登录] --> B{校验}\n  B -->|成功| C[进入主页]\n  B -->|失败| D[提示错误]`
 
-> eyes_ocr 读取 <workspace>\renders\eyes-xxx.png，把识别出的文字逐行复述给我
+> eyes_ocr 读取 <workspace>\pics\eyes-xxx.png，把识别出的文字逐行复述给我
 
 ## 限制
 
@@ -190,10 +184,10 @@ DPI 缩放（125%/150%）已处理：先 `SetProcessDPIAware` 再取窗口矩形
 - **OCR 路径**：WinRT `StorageFile` 要求反斜杠路径，脚本已自动把 `/` 规范化为 `\`。
 - **`eyes_analyze` 仅支持 8-bit RGB/RGBA 非交错 PNG**（覆盖本插件的渲染输出与常见截图）；其他变体返回明确错误。
 - 无 `attachments` 服务时不注册工具（与 `read_image` 相同门槛）。
-- **图片可以直接粘进输入框了**：DSH 输入框原生支持粘贴/拖放，当前主模型（DeepSeek-V4.1-Flash）本身支持图片输入，所以日常发图不需要 `eyes_paste`。`eyes_paste` 保留给"需要把图落到工作区磁盘"的场景（离线 OCR、像素统计、后续工具引用）。
+- **图片可以直接粘进输入框了**：DSH 输入框原生支持粘贴/拖放，当前主模型（DeepSeek-V4.1-Flash）本身支持图片输入，所以日常发图不需要 `eyes_paste`。`eyes_paste` 保留给"需要在磁盘上留下一个路径"的场景（离线 OCR、像素统计、后续工具引用）。
 
 ## 开发
 
-- 服务端半区：`lib/index.js`（纯 ESM，无构建）、`lib/png.js`（PNG 解码+分析）、`lib/ocr.ps1`（Windows OCR 封装）、`lib/lmstudio.js`（本机 LM Studio）、`lib/grab.ps1`（截屏封装）。
+- 服务端半区：`lib/index.js`（纯 ESM，无构建）、`lib/png.js`（PNG 解码+分析）、`lib/ocr.ps1`（Windows OCR 封装）、`lib/grab.ps1`（截屏封装）。
 - 客户端半区：`client/client.js`（手写 `window.__ModuleLoader__.load` factory bundle，无构建；loader 表提供 `react`）。
 - 改动后需重启 `dsh web` 才生效（生产启动无 HMR watcher）。

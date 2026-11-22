@@ -1,7 +1,7 @@
 {
   "name": "dsh-omni-vision",
-  "description": "Visual I/O for the DSH Web GUI: eyes_grab captures the screen (window/screen/region) and hands the picture straight to the model without leaving a file, eyes_render draws on a canvas (text, arrows, paths, arcs, function plots y=f(x), parametric curves x(t),y(t), labeled coordinate grids, Mermaid) that the model can see again and whose PNG is the only one kept on disk, eyes_paste brings a user image into the conversation. Windows-only companions: eyes_ocr (Windows.Media.Ocr), eyes_analyze (pixel grid), eyes_lmstudio (local vision model).",
-  "version": "0.6.0",
+  "description": "Visual I/O for the DSH Web GUI: eyes_grab captures the screen (window/screen/region) and hands the picture straight to the model without leaving a file, eyes_render draws on a canvas (text, arrows, paths, arcs, function plots y=f(x), parametric curves x(t),y(t), labeled coordinate grids, Mermaid) that the model can see again and whose PNG is kept as one permanent copy under pics/, eyes_paste brings a user image into the conversation. Windows-only companions: eyes_ocr (Windows.Media.Ocr), eyes_analyze (pixel grid). Nothing transient is written into the workspace.",
+  "version": "0.7.0",
   "type": "module",
   "main": "./lib/index.js",
   "license": "MIT",
