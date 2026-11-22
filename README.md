@@ -1,6 +1,6 @@
 # dsh-omni-vision
 
-> **本插件由 DeepSeek v4 Flash（`deepseek-v4-flash`）与 DeepSeek v4.1 Flash（`deepseek-flash`）编写。**
+> **本插件由 DeepSeek v4 Flash（`deepseek-v4-flash`）与 DeepSeek v4.1 Flash 1017（`deepseek-flash`）编写。**
 
 **对话里的视觉 I/O 层**——把视觉世界送进对话，把对话里的画面送出去。
 
